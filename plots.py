@@ -284,6 +284,148 @@ def plot_aggregate(
     return filepath
 
 
+_MODEL_COLORS = {
+    "Naive":  "#888888",
+    "WMA":    "#2E86AB",
+    "SES":    "#48A999",
+    "Holt":   "#E88C2E",
+    "LinReg": "#9B59B6",
+}
+_MODEL_ORDER = ["Naive", "WMA", "SES", "Holt", "LinReg"]
+
+
+def plot_store_summary(store_results: list, output_dir: str = None) -> str:
+    """
+    Generate a summary dashboard PNG across all stores.
+
+    Three panels:
+      Top    — horizontal bar chart of winner forecast per store, colored by winning model
+      Bottom left  — bar chart of how many stores each model won
+      Bottom right — MAE heatmap (stores x models); greener = lower error
+
+    Returns the filepath of the saved image.
+    """
+    if output_dir is None:
+        output_dir = CONFIG["plots_dir"]
+    os.makedirs(output_dir, exist_ok=True)
+
+    # ---- collect data -------------------------------------------------------
+    rows = []
+    for store in store_results:
+        res = store["results"]
+        winner = next((n for n, r in res.items() if r.get("is_winner")), "Naive")
+        winner_fc = res[winner]["forecast"]
+        mae_vals = {m: res[m]["mae"] for m in _MODEL_ORDER}
+        rows.append({
+            "label": f"Store {store['store_num']}" if store["store_num"] else str(store["store_id"]),
+            "winner": winner,
+            "forecast": winner_fc,
+            "mae": mae_vals,
+        })
+
+    # sort stores by forecast descending for the bar chart
+    rows.sort(key=lambda r: r["forecast"], reverse=True)
+    labels   = [r["label"]   for r in rows]
+    forecasts = [r["forecast"] for r in rows]
+    winners  = [r["winner"]  for r in rows]
+    bar_colors = [_MODEL_COLORS.get(w, "#888888") for w in winners]
+
+    # MAE matrix: rows = stores (same order), cols = models
+    mae_matrix = np.array(
+        [[r["mae"][m] if not (math.isnan(r["mae"][m]) or math.isinf(r["mae"][m])) else np.nan
+          for m in _MODEL_ORDER]
+         for r in rows],
+        dtype=float,
+    )
+
+    # winner counts
+    from collections import Counter
+    win_counts = Counter(winners)
+
+    # ---- layout -------------------------------------------------------------
+    fig = plt.figure(figsize=(14, 11))
+    gs = fig.add_gridspec(
+        2, 2,
+        height_ratios=[1.1, 1.2],
+        hspace=0.42,
+        wspace=0.32,
+    )
+    ax_bars = fig.add_subplot(gs[0, :])   # top: full width
+    ax_wins = fig.add_subplot(gs[1, 0])   # bottom left
+    ax_heat = fig.add_subplot(gs[1, 1])   # bottom right
+
+    # ---- panel 1: forecast bars ---------------------------------------------
+    y_pos = np.arange(len(labels))
+    ax_bars.barh(y_pos, forecasts, color=bar_colors, edgecolor="white", linewidth=0.5)
+    ax_bars.set_yticks(y_pos)
+    ax_bars.set_yticklabels(labels, fontsize=8)
+    ax_bars.invert_yaxis()
+    ax_bars.set_xlabel("Forecast (packs / wk)", fontsize=9)
+    ax_bars.set_title("Winner Forecast per Store", fontsize=11, pad=6)
+    ax_bars.grid(axis="x", alpha=0.25)
+
+    # add forecast value labels on bars
+    for i, (fc, winner) in enumerate(zip(forecasts, winners)):
+        ax_bars.text(
+            fc + max(forecasts) * 0.01, i,
+            f"{fc:.1f}  [{winner}]",
+            va="center", fontsize=7, color="#333333",
+        )
+
+    # legend for model colors
+    from matplotlib.patches import Patch
+    legend_handles = [
+        Patch(facecolor=_MODEL_COLORS[m], label=m) for m in _MODEL_ORDER
+    ]
+    ax_bars.legend(
+        handles=legend_handles, title="Winning model",
+        loc="lower right", fontsize=7, title_fontsize=8,
+    )
+
+    # ---- panel 2: win counts ------------------------------------------------
+    model_wins = [win_counts.get(m, 0) for m in _MODEL_ORDER]
+    ax_wins.bar(
+        _MODEL_ORDER, model_wins,
+        color=[_MODEL_COLORS[m] for m in _MODEL_ORDER],
+        edgecolor="white", linewidth=0.5,
+    )
+    ax_wins.set_ylabel("Stores won", fontsize=9)
+    ax_wins.set_title("Model Win Counts", fontsize=11, pad=6)
+    ax_wins.grid(axis="y", alpha=0.25)
+    for i, v in enumerate(model_wins):
+        if v > 0:
+            ax_wins.text(i, v + 0.1, str(v), ha="center", fontsize=9, fontweight="bold")
+
+    # ---- panel 3: MAE heatmap -----------------------------------------------
+    vmin = np.nanmin(mae_matrix)
+    vmax = np.nanpercentile(mae_matrix, 90)  # cap colorscale at 90th pct to reduce outlier skew
+    im = ax_heat.imshow(
+        mae_matrix, aspect="auto", cmap="RdYlGn_r", vmin=vmin, vmax=vmax
+    )
+    ax_heat.set_xticks(np.arange(len(_MODEL_ORDER)))
+    ax_heat.set_xticklabels(_MODEL_ORDER, fontsize=8)
+    ax_heat.set_yticks(np.arange(len(labels)))
+    ax_heat.set_yticklabels(labels, fontsize=7)
+    ax_heat.set_title("MAE by Store and Model\n(green = lower error)", fontsize=11, pad=6)
+
+    # annotate cells with MAE values
+    for i in range(len(rows)):
+        for j, model in enumerate(_MODEL_ORDER):
+            val = mae_matrix[i, j]
+            text = f"{val:.1f}" if not np.isnan(val) else "—"
+            brightness = im.cmap(im.norm(val))[:3]
+            text_color = "white" if sum(brightness) / 3 < 0.5 else "#222222"
+            ax_heat.text(j, i, text, ha="center", va="center", fontsize=6.5, color=text_color)
+
+    fig.colorbar(im, ax=ax_heat, fraction=0.03, pad=0.04, label="MAE (packs/wk)")
+
+    # ---- save ---------------------------------------------------------------
+    filepath = os.path.join(output_dir, "summary.png")
+    fig.savefig(filepath, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    return filepath
+
+
 def plot_all_stores(
     store_results: list,
     output_dir: str = None,

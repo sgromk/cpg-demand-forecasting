@@ -24,7 +24,7 @@ import pandas as pd
 from config import CONFIG
 from data_loader import load_from_xlsx, load_from_gsheet, get_aggregate_demand
 from backtest import run_all_stores, run_aggregate
-from plots import plot_all_stores, plot_aggregate
+from plots import plot_all_stores, plot_aggregate, plot_store_summary
 
 # ---------------------------------------------------------------------------
 # Model display order and short names
@@ -348,6 +348,9 @@ def main(argv: Optional[List[str]] = None) -> None:
             agg_series, agg_results, output_dir=plots_dir, n_backtest=args.n_backtest
         )
         print(f"  {agg_path}")
+
+        summary_path = plot_store_summary(store_results, output_dir=plots_dir)
+        print(f"  {summary_path}")
 
 
 if __name__ == "__main__":
