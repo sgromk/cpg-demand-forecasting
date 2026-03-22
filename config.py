@@ -6,4 +6,7 @@ CONFIG = {
     'holt_grid': [0.1, 0.3, 0.5, 0.7, 0.9],
     'output_csv': True,
     'output_gsheet': False,
+    'output_plots': True,
+    'plots_dir': 'plots',
+    'forecast_weeks': 4,       # how many weeks ahead to extend the forecast line
 }

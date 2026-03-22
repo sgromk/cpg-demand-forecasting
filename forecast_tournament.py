@@ -22,8 +22,9 @@ from typing import List, Dict, Optional
 import pandas as pd
 
 from config import CONFIG
-from data_loader import load_from_xlsx, load_from_gsheet
+from data_loader import load_from_xlsx, load_from_gsheet, get_aggregate_demand
 from backtest import run_all_stores, run_aggregate
+from plots import plot_all_stores, plot_aggregate
 
 # ---------------------------------------------------------------------------
 # Model display order and short names
@@ -276,6 +277,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default=False,
         help="Skip writing CSV output files.",
     )
+    parser.add_argument(
+        "--no-plots",
+        action="store_true",
+        default=False,
+        help="Skip generating PNG forecast plots.",
+    )
     return parser
 
 
@@ -326,6 +333,21 @@ def main(argv: Optional[List[str]] = None) -> None:
     if write_csv:
         _write_store_csv(store_results)
         _write_aggregate_csv(agg_results)
+
+    # --- Generate plots ------------------------------------------------------
+    write_plots = CONFIG["output_plots"] and not args.no_plots
+    if write_plots:
+        plots_dir = CONFIG["plots_dir"]
+        print(f"\nGenerating plots -> {os.path.abspath(plots_dir)}/")
+        paths = plot_all_stores(store_results, output_dir=plots_dir, n_backtest=args.n_backtest)
+        for p in paths:
+            print(f"  {p}")
+
+        agg_series = get_aggregate_demand(demand_df, min_stores=CONFIG["min_stores_for_agg"])
+        agg_path = plot_aggregate(
+            agg_series, agg_results, output_dir=plots_dir, n_backtest=args.n_backtest
+        )
+        print(f"  {agg_path}")
 
 
 if __name__ == "__main__":

@@ -175,6 +175,7 @@ def run_all_stores(
                 "store_id": store_id,
                 "store_num": store_num,
                 "n_obs": len(series),
+                "series": series,
                 "results": tournament_results,
             }
         )
