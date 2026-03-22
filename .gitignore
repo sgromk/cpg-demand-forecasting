@@ -1,0 +1,10 @@
+demand_forecasting_spec.md
+*.xlsx
+*.csv
+creds.json
+*.json
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
