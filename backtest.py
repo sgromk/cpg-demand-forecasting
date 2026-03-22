@@ -10,15 +10,15 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Optional
 
-from .models import (
+from models import (
     NaiveMean,
     WeightedMovingAverage,
     SimpleExponentialSmoothing,
     HoltsLinearTrend,
     LinearRegressionModel,
 )
-from .config import CONFIG
-from .data_loader import (
+from config import CONFIG
+from data_loader import (
     get_all_store_ids,
     get_store_demand_series,
     get_store_number,

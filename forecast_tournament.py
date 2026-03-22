@@ -4,16 +4,13 @@ Demand Forecasting Tournament – main entry point.
 Usage
 -----
     # From an Excel tracker:
-    python -m forecast_tournament.forecast_tournament --input tracker.xlsx
+    python forecast_tournament.py --input tracker.xlsx
 
     # From a Google Sheet:
-    python -m forecast_tournament.forecast_tournament \\
-        --gsheet "Tozi Demand Tracker" \\
-        --credentials creds.json
+    python forecast_tournament.py --gsheet "My Demand Tracker" --credentials creds.json
 
     # Override backtest window and skip CSV output:
-    python -m forecast_tournament.forecast_tournament \\
-        --input tracker.xlsx --n-backtest 3 --no-csv
+    python forecast_tournament.py --input tracker.xlsx --n-backtest 3 --no-csv
 """
 
 import argparse
@@ -24,9 +21,9 @@ from typing import List, Dict, Optional
 
 import pandas as pd
 
-from .config import CONFIG
-from .data_loader import load_from_xlsx, load_from_gsheet
-from .backtest import run_all_stores, run_aggregate
+from config import CONFIG
+from data_loader import load_from_xlsx, load_from_gsheet
+from backtest import run_all_stores, run_aggregate
 
 # ---------------------------------------------------------------------------
 # Model display order and short names
@@ -245,7 +242,7 @@ def _write_aggregate_csv(agg_results: Dict[str, Dict], filepath: str = "aggregat
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="forecast_tournament",
-        description="Run a demand forecasting model tournament across HEB store sell-through data.",
+        description="Run a demand forecasting model tournament across retail store sell-through data.",
     )
 
     source_group = parser.add_mutually_exclusive_group(required=True)

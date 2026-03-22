@@ -10,7 +10,7 @@ representing the forecast for the next period.
 
 import numpy as np
 import pandas as pd
-from .config import CONFIG
+from config import CONFIG
 
 
 class NaiveMean:
