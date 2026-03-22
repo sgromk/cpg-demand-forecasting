@@ -7,7 +7,7 @@ Supports two sources:
 
 Column convention in Weekly Demand sheet
 -----------------------------------------
-Column 0 (A): Store ID       – string identifier, e.g. "HEB-592"
+Column 0 (A): Store ID       – string identifier, e.g. "STORE-592"
 Column 1 (B): Store Number   – numeric store number, e.g. 592
 Columns 2+:   Date columns   – column headers are dates; values are weekly demand units.
               Some trailing columns (e.g. BA–BD) are auto-calculated summaries and are
