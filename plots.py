@@ -6,7 +6,7 @@ For each store (and for the aggregate), produces a PNG showing:
   - Winning model's one-step-ahead backtest predictions (solid line)
   - Winning model's forecast extended N weeks into the future (dashed line)
 
-Output goes to CONFIG['plots_dir'] (default: plots/).
+Output goes to a run-specific subdirectory passed in by the caller.
 """
 
 import os
@@ -193,7 +193,7 @@ def plot_store(
     Returns the filepath of the saved image.
     """
     if output_dir is None:
-        output_dir = CONFIG["plots_dir"]
+        output_dir = os.path.join(CONFIG["outputs_root"], "plots")
     if n_backtest is None:
         n_backtest = CONFIG["n_backtest"]
     os.makedirs(output_dir, exist_ok=True)
@@ -247,7 +247,7 @@ def plot_aggregate(
     Returns the filepath of the saved image.
     """
     if output_dir is None:
-        output_dir = CONFIG["plots_dir"]
+        output_dir = os.path.join(CONFIG["outputs_root"], "plots")
     if n_backtest is None:
         n_backtest = CONFIG["n_backtest"]
     os.makedirs(output_dir, exist_ok=True)
@@ -306,7 +306,7 @@ def plot_store_summary(store_results: list, output_dir: str = None) -> str:
     Returns the filepath of the saved image.
     """
     if output_dir is None:
-        output_dir = CONFIG["plots_dir"]
+        output_dir = os.path.join(CONFIG["outputs_root"], "plots")
     os.makedirs(output_dir, exist_ok=True)
 
     # ---- collect data -------------------------------------------------------

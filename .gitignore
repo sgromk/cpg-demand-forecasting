@@ -1,5 +1,5 @@
 demand_forecasting_spec.md
-plots/
+outputs/
 *.xlsx
 *.csv
 creds.json

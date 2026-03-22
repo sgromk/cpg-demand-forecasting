@@ -17,6 +17,7 @@ import argparse
 import sys
 import os
 import math
+from datetime import datetime
 from typing import List, Dict, Optional
 
 import pandas as pd
@@ -316,11 +317,18 @@ def main(argv: Optional[List[str]] = None) -> None:
             print(f"ERROR loading Google Sheet: {exc}", file=sys.stderr)
             sys.exit(1)
 
+    # --- Build run output directory ------------------------------------------
+    run_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    run_dir = os.path.join(CONFIG["outputs_root"], run_id)
+    plots_dir = os.path.join(run_dir, "plots")
+    os.makedirs(run_dir, exist_ok=True)
+    print(f"\nRun ID: {run_id}  ->  {os.path.abspath(run_dir)}/")
+
     # --- Run tournaments -----------------------------------------------------
-    print("Running per-store forecasting tournament…")
+    print("Running per-store forecasting tournament...")
     store_results = run_all_stores(demand_df, n_backtest=args.n_backtest)
 
-    print("Running aggregate forecasting tournament…")
+    print("Running aggregate forecasting tournament...")
     agg_results = run_aggregate(demand_df, n_backtest=args.n_backtest)
 
     # --- Print console output ------------------------------------------------
@@ -331,13 +339,12 @@ def main(argv: Optional[List[str]] = None) -> None:
     # --- Write CSV -----------------------------------------------------------
     write_csv = CONFIG["output_csv"] and not args.no_csv
     if write_csv:
-        _write_store_csv(store_results)
-        _write_aggregate_csv(agg_results)
+        _write_store_csv(store_results, filepath=os.path.join(run_dir, "store_forecasts.csv"))
+        _write_aggregate_csv(agg_results, filepath=os.path.join(run_dir, "aggregate_forecast.csv"))
 
     # --- Generate plots ------------------------------------------------------
     write_plots = CONFIG["output_plots"] and not args.no_plots
     if write_plots:
-        plots_dir = CONFIG["plots_dir"]
         print(f"\nGenerating plots -> {os.path.abspath(plots_dir)}/")
         paths = plot_all_stores(store_results, output_dir=plots_dir, n_backtest=args.n_backtest)
         for p in paths:

@@ -7,6 +7,6 @@ CONFIG = {
     'output_csv': True,
     'output_gsheet': False,
     'output_plots': True,
-    'plots_dir': 'plots',
-    'forecast_weeks': 4,       # how many weeks ahead to extend the forecast line
+    'outputs_root': 'outputs',  # parent directory; each run gets its own subfolder
+    'forecast_weeks': 4,        # how many weeks ahead to extend the forecast line
 }
